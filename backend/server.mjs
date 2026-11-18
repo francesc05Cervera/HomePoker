@@ -16,8 +16,7 @@ async function loadFrontend() {
   const assets = [
     ['/', 'index.html', 'text/html'],
     ['/app.js', 'app.js', 'text/javascript'],
-    ['/style.css', 'style.css', 'text/css'],
-    ['/home-hero.webp', 'home-hero.webp', 'image/webp']
+    ['/style.css', 'style.css', 'text/css']
   ];
   return new Map(await Promise.all(assets.map(async ([path, file, mime]) => [
     path, {body:await readFile(new URL(file, directory)), mime}
@@ -96,7 +95,7 @@ const server = createServer(async (req,res) => {
     }
     const file = files.get(url.pathname);
     if (file && req.method === 'GET') {
-      res.setHeader('Content-Type',file.mime.startsWith('image/') ? file.mime : file.mime + '; charset=utf-8');
+      res.setHeader('Content-Type',file.mime + '; charset=utf-8');
       res.setHeader('Content-Security-Policy',"default-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
       return res.end(file.body);
     }
@@ -132,4 +131,3 @@ server.listen(port,process.env.HOLDEM_HOST ?? '0.0.0.0',() => {
     }
   }
 });
-

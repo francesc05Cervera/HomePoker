@@ -355,9 +355,6 @@ for (const route of ['join','recover']) {
   };
   if (urlCode && /^[A-Z2-9]{6}$/.test(urlCode)) el(route).elements.code.value = urlCode;
 }
-if (!session && /^[A-Z2-9]{6}$/.test(urlCode ?? '')) {
-  addEventListener('load', () => el('join').scrollIntoView(), {once:true});
-}
 el('openRecover').onclick = () => {
   showError('');
   const code = el('join').elements.code.value.trim();
@@ -392,6 +389,18 @@ el('copy').onclick = () => {
   copyText(el('copy'),invite.href,'Copia il link di invito');
 };
 el('copyRecovery').onclick = () => copyText(el('copyRecovery'),state.recoveryCode,'Copia il codice personale');
-refresh();
-setInterval(refresh,900);
-setInterval(updateClocks,180);
+const ageGate = el('ageGate');
+ageGate.addEventListener('cancel',event => event.preventDefault());
+el('ageDecline').onclick = () => {
+  el('ageChoices').hidden = true;
+  const blocked = el('ageBlocked');
+  blocked.hidden = false;
+  blocked.focus();
+};
+el('ageAccept').addEventListener('click', () => {
+  ageGate.close();
+  refresh();
+  setInterval(refresh,900);
+  setInterval(updateClocks,180);
+}, {once:true});
+ageGate.showModal();
