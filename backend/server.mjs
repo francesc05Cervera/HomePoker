@@ -23,14 +23,19 @@ async function loadFrontend() {
 }
 
 const files = await loadFrontend();
-const frontendOrigin = process.env.FRONTEND_ORIGIN
-  ? new URL(process.env.FRONTEND_ORIGIN).origin
-  : null;
+const frontendOrigins = new Set();
+if (process.env.RENDER_EXTERNAL_HOSTNAME === 'homepoker-e2ns.onrender.com') {
+  frontendOrigins.add('https://home-poker-9869.onrender.com');
+}
+if (process.env.FRONTEND_ORIGIN) {
+  frontendOrigins.add(new URL(process.env.FRONTEND_ORIGIN).origin);
+}
 
 function allowFrontend(req, res) {
   res.setHeader('Vary', 'Origin');
-  if (!frontendOrigin || req.headers.origin !== frontendOrigin) return false;
-  res.setHeader('Access-Control-Allow-Origin', frontendOrigin);
+  const origin = req.headers.origin;
+  if (!frontendOrigins.has(origin)) return false;
+  res.setHeader('Access-Control-Allow-Origin', origin);
   return true;
 }
 async function json(req) {
