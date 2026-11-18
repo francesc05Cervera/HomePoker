@@ -15,7 +15,7 @@ Apri http://localhost:8080. Usa due profili o contesti del browser per giocare c
 
 ## Regole
 
-- In Torneo, i bui aumentano del 50% a ogni livello, arrotondati verso l’alto. L’admin imposta l’intervallo. I bui si aggiornano alla mano successiva. I giocatori eliminati possono continuare a osservare il tavolo.
+- In Torneo, il piccolo e il grande buio raddoppiano a ogni livello. L’admin imposta l’intervallo. I bui si aggiornano alla mano successiva. I giocatori eliminati possono continuare a osservare il tavolo.
 - In Cash Game, i bui restano fissi. Un giocatore senza fiches può inviare una richiesta di ricarica da 1 fino a 2× lo stack iniziale. L’admin può accettarla o rifiutarla durante qualsiasi fase. La ricarica viene applicata quando il giocatore riceve le carte nella mano successiva.
 - L’admin avvia la prima mano. Quando ci sono almeno due giocatori pronti, la prossima mano parte 5 secondi dopo il risultato. L’admin può fermare l’avvio tra le mani.
 - Un turno dura 60 secondi. A tempo scaduto il server fa check se non ci sono fiches da chiamare, altrimenti fold. Con un all-in e nessuna azione rimanente, il server rivela le strade mancanti ogni 3 secondi. Il flop esce in un unico gruppo.
@@ -55,3 +55,4 @@ Le richieste POST usano JSON. Creazione, iscrizione e recupero restituiscono tok
 | POST | /api/rooms/:code/leave | — |
 
 mode accetta cash o tournament. move accetta call (anche per check), fold o raise. target è il totale della puntata nel giro corrente. Il server calcola e valida anche i rilanci rapidi Piatto e 2× piatto.
+

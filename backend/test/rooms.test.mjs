@@ -145,8 +145,9 @@ test('Torneo: timeout fold/check, bui dalla mano successiva e uscita definitiva'
   state = await t.read(t.a);
   assert.equal(state.phase,'preflop');
   assert.equal(state.level,2);
-  assert.equal(state.small,5);
-  assert.equal(state.big,15);
+  assert.equal(state.small,6);
+  assert.equal(state.big,20);
+  assert.deepEqual(state.nextBlinds,{small:12,big:40});
   state = await t.update(t.actor(state),'action',{move:'call'});
   const second = t.actor(state);
   assert.equal((await t.read(second)).actions.call,0);
@@ -206,4 +207,5 @@ test('Riconnessione in entrambe le modalità e ripristino persistente di carte e
   await t.store.close();
   await rm(folder,{recursive:true,force:true});
 });
+
 

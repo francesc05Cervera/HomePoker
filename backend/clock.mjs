@@ -15,8 +15,8 @@ export function finishRoster(room) {
 }
 
 export function nextBlinds(room) {
-  const big = Math.min(1_000_000, Math.ceil(room.big * 1.5));
-  return {small:Math.min(big - 1, Math.ceil(room.small * 1.5)), big};
+  const multiplier = room.big <= Number.MAX_SAFE_INTEGER / 2 ? 2 : 1;
+  return {small:room.small * multiplier, big:room.big * multiplier};
 }
 
 export function syncNext(room, now) {
@@ -111,3 +111,4 @@ export function tickGame(room, now) {
   }
   return false;
 }
+
