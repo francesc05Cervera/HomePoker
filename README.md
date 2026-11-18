@@ -33,7 +33,7 @@ Apri http://localhost:8080. Usa due profili o contesti del browser per giocare c
 | Publish Directory | — | dist |
 | Health Check Path | /healthz | — |
 
-Configura DATABASE_URL sul Web Service con l’URL di un database PostgreSQL. Il server crea la tabella homepoker_rooms al primo avvio. In alternativa puoi configurare HOLDEM_DB_PATH con un percorso su un disco persistente. Il backend richiede una di queste opzioni su Render. Tieni il Web Service su una sola istanza per gestire i segnali di presenza in modo coerente.
+Per conservare le partite tra riavvii e deploy, configura DATABASE_URL sul Web Service con l’URL di PostgreSQL e usa npm ci come comando di build. Il server crea la tabella homepoker_rooms al primo avvio. In alternativa imposta HOLDEM_DB_PATH su un disco persistente. In assenza di queste configurazioni, il backend si avvia con SQLite temporaneo e i tavoli possono andare persi quando Render sostituisce l’istanza. Tieni il Web Service su una sola istanza per gestire i segnali di presenza.
 
 Imposta API_ORIGIN nello Static Site con l’URL HTTPS del Web Service. Imposta FRONTEND_ORIGIN sul Web Service con l’origine HTTPS dello Static Site. Distribuisci la nuova versione del backend prima del frontend. I tavoli creati dalla versione precedente, che vivevano in memoria, non possono essere trasferiti nel database.
 

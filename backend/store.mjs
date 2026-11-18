@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 function record(room, deck) {
@@ -75,7 +76,8 @@ export async function openStore() {
   if (process.env.DATABASE_URL) return postgres(process.env.DATABASE_URL);
   const configured = process.env.HOLDEM_DB_PATH;
   if (process.env.RENDER === 'true' && !configured) {
-    throw new Error('Su Render configura DATABASE_URL o HOLDEM_DB_PATH su un disco persistente.');
+    console.warn('HomePoker usa SQLite temporaneo. Configura DATABASE_URL o un disco persistente per conservare le partite tra deploy.');
+    return sqlite(resolve(tmpdir(), 'homepoker.sqlite'));
   }
   const path = configured ?? fileURLToPath(new URL('./data/homepoker.sqlite', import.meta.url));
   return sqlite(path === ':memory:' ? path : resolve(path));
