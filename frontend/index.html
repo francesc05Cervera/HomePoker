@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="api-origin" content="">
+<title>Tavolo Verde · Texas Hold’em</title>
+<link rel="stylesheet" href="/style.css">
+<script type="module" src="/app.js"></script>
+</head>
+<body>
+<header><a class="brand" href="/"><span>♠</span> Tavolo Verde</a><span id="connection"></span><button id="exit" hidden>Esci dalla vista</button></header>
+<main>
+<section id="home">
+<div class="intro"><p class="eyebrow">TEXAS HOLD’EM MULTIPLAYER</p><h1>Ci vediamo al tavolo.</h1><p>Una stanza privata con codice, da 2 a 9 giocatori e fiches virtuali.</p></div>
+<div class="lobby">
+<form id="create"><h2>Crea un tavolo</h2><label>Il tuo nome<input name="name" maxlength="24" autocomplete="nickname" required></label><label>Nome del tavolo<input name="roomName" maxlength="36" value="Serata poker" required></label>
+<div class="split"><label>Fiches iniziali<input name="stack" type="number" value="1500" min="20" max="1000000" required></label><label>Grande buio<input name="big" type="number" value="20" min="2" max="10000" step="2" required></label></div><button class="primary">Crea tavolo</button></form>
+<form id="join"><h2>Unisciti</h2><label>Il tuo nome<input name="name" maxlength="24" autocomplete="nickname" required></label><label>Codice del tavolo<input name="code" placeholder="A7K4TV" pattern="[a-zA-Z2-9]{6}" maxlength="6" required></label><button class="primary">Entra al tavolo</button></form>
+</div>
+</section>
+<p id="error" role="alert" hidden></p>
+<section id="game" hidden>
+<div class="game-head"><div><p id="stage" class="eyebrow"></p><h1 id="roomName"></h1></div><div class="invite"><span id="code"></span><button id="copy">Copia invito</button></div></div>
+<section class="felt" aria-label="Tavolo da poker"><p id="pot" class="pot"></p><div id="board" class="cards" aria-label="Carte comuni"></div><p id="turn" role="status"></p></section>
+<div id="seats" class="seats" aria-label="Giocatori"></div>
+<div id="result" role="status" hidden></div>
+<section class="controls" aria-label="Azioni di gioco">
+<button id="start" class="primary" hidden></button>
+<div id="moves" hidden>
+<button id="fold">Passa (fold)</button><button id="call" class="primary"></button>
+<form id="raise" hidden><label for="target">Totale del rilancio</label><input id="target" type="number" step="1" required><button id="raiseButton"></button><button id="allIn" type="button">All-in</button></form>
+</div>
+</section>
+</section>
+</main>
+</body>
+</html>
+

@@ -23,6 +23,16 @@ async function loadFrontend() {
 }
 
 const files = await loadFrontend();
+const frontendOrigin = process.env.FRONTEND_ORIGIN
+  ? new URL(process.env.FRONTEND_ORIGIN).origin
+  : null;
+
+function allowFrontend(req, res) {
+  res.setHeader('Vary', 'Origin');
+  if (!frontendOrigin || req.headers.origin !== frontendOrigin) return false;
+  res.setHeader('Access-Control-Allow-Origin', frontendOrigin);
+  return true;
+}
 async function json(req) {
   if (!req.headers['content-type']?.startsWith('application/json')) fail('Formato della richiesta non valido.',415);
   const chunks = [];
@@ -50,6 +60,19 @@ const server = createServer(async (req,res) => {
   res.setHeader('Referrer-Policy','no-referrer');
   try {
     const url = new URL(req.url,'http://localhost');
+    if (url.pathname === '/healthz' && req.method === 'GET') {
+      return reply(res, {ok:true});
+    }
+    if (url.pathname === '/api/rooms' || url.pathname.startsWith('/api/rooms/')) {
+      const allowed = allowFrontend(req, res);
+      if (req.method === 'OPTIONS') {
+        if (!allowed) fail('Origine non consentita.', 403);
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+        res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+        res.statusCode = 204;
+        return res.end();
+      }
+    }
     const file = files.get(url.pathname);
     if (file && req.method === 'GET') {
       res.setHeader('Content-Type',file.mime + '; charset=utf-8');
@@ -79,7 +102,7 @@ const server = createServer(async (req,res) => {
   }
 });
 
-const port = Number(process.env.HOLDEM_PORT ?? 8080);
+const port = Number(process.env.PORT ?? process.env.HOLDEM_PORT ?? 8080);
 server.listen(port,process.env.HOLDEM_HOST ?? '0.0.0.0',() => {
   const port = server.address().port;
   console.log('Tavolo Hold’em: http://localhost:' + port);
@@ -89,6 +112,7 @@ server.listen(port,process.env.HOLDEM_HOST ?? '0.0.0.0',() => {
     }
   }
 });
+
 
 
 
