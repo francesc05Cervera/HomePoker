@@ -2,10 +2,10 @@ const apiOrigin = document.querySelector('meta[name=api-origin]').content;
 const el = id => document.getElementById(id);
 const numeral = new Intl.NumberFormat('it-IT');
 const number = value => numeral.format(value);
-const signed = new Intl.NumberFormat('it-IT', {signDisplay:'exceptZero'});
 const phases = {lobby:'Lobby', preflop:'Preflop', flop:'Flop', turn:'Turn', river:'River', result:'Risultato'};
 const suits = {s:'♠', h:'♥', d:'♦', c:'♣'};
 const suitNames = {s:'picche', h:'cuori', d:'quadri', c:'fiori'};
+const fullTable = [[50,90],[77,82],[88,59],[88,35],[65,11],[35,11],[12,35],[12,59],[23,82]];
 const urlCode = new URLSearchParams(location.search).get('join')?.toUpperCase();
 const sessionKey = 'holdem-session';
 let session = savedSession();
@@ -100,8 +100,10 @@ function seatNodes(current) {
     seat.classList.toggle('acting',current.actor === player.id);
     seat.classList.toggle('folded',player.folded);
     const angle = index * 2 * Math.PI / ordered.length;
-    seat.style.left = (50 + 38 * Math.sin(angle)) + '%';
-    seat.style.top = (50 + 40 * Math.cos(angle)) + '%';
+    const [left,top] = ordered.length === 9
+      ? fullTable[index] : [50 + 38 * Math.sin(angle),50 + 40 * Math.cos(angle)];
+    seat.style.left = left + '%';
+    seat.style.top = top + '%';
     const status = player.leaving ? 'In uscita' : player.waiting ? 'Prossima mano' :
       player.busted ? (current.mode === 'cash' ? 'Senza fiches' : 'Eliminato') :
       player.folded ? 'Fold' : player.stack === 0 && player.inHand ? 'All-in' : '';
@@ -113,6 +115,15 @@ function seatNodes(current) {
       dealer.setAttribute('aria-label','Dealer');
       seat.append(dealer);
     }
+    const stats = node('dl',null,'seat-stats');
+    for (const [label,value] of [['Vinte',player.wins],['Ricariche',player.rebuys]]) {
+      const item = node('div');
+      const term = node('dt',label);
+      if (label === 'Vinte') term.title = 'Mani vinte';
+      item.append(term,node('dd',number(value)));
+      stats.append(item);
+    }
+    seat.append(stats);
     if (player.cards.length) seat.append(cardRow(player.cards));
     return seat;
   });
@@ -141,12 +152,6 @@ function renderPanels(current) {
       buttons.append(button);
     }
     row.append(node('span',entry.name + ' · ' + number(entry.amount) + ' fiches'),buttons);
-    return row;
-  }));
-  el('stats').replaceChildren(...current.players.map(player => {
-    const row = node('div',null,'row');
-    const stats = number(player.wins) + ' vinte · ' + number(player.rebuys) + ' ricariche · ' + signed.format(player.net) + ' nette';
-    row.append(node('strong',player.name),node('small',stats));
     return row;
   }));
   el('handPanel').hidden = !current.lastHand;
