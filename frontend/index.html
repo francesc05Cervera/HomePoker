@@ -4,36 +4,86 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="api-origin" content="">
-<title>Tavolo Verde · Texas Hold’em</title>
+<meta name="theme-color" content="#101713">
+<title>HomePoker · Texas Hold’em</title>
 <link rel="stylesheet" href="/style.css">
 <script type="module" src="/app.js"></script>
 </head>
 <body>
-<header><a class="brand" href="/"><span>♠</span> Tavolo Verde</a><span id="connection"></span><button id="exit" hidden>Esci dalla vista</button></header>
+<header class="site-header"><a class="brand" href="/"><span aria-hidden="true">♠</span> HomePoker</a><span id="connection"></span><button id="exit" hidden>Lascia il tavolo</button></header>
 <main>
 <section id="home">
-<div class="intro"><p class="eyebrow">TEXAS HOLD’EM MULTIPLAYER</p><h1>Ci vediamo al tavolo.</h1><p>Una stanza privata con codice, da 2 a 9 giocatori e fiches virtuali.</p></div>
-<div class="lobby">
-<form id="create"><h2>Crea un tavolo</h2><label>Il tuo nome<input name="name" maxlength="24" autocomplete="nickname" required></label><label>Nome del tavolo<input name="roomName" maxlength="36" value="Serata poker" required></label>
-<div class="split"><label>Fiches iniziali<input name="stack" type="number" value="1500" min="20" max="1000000" required></label><label>Grande buio<input name="big" type="number" value="20" min="2" max="10000" step="2" required></label></div><button class="primary">Crea tavolo</button></form>
-<form id="join"><h2>Unisciti</h2><label>Il tuo nome<input name="name" maxlength="24" autocomplete="nickname" required></label><label>Codice del tavolo<input name="code" placeholder="A7K4TV" pattern="[a-zA-Z2-9]{6}" maxlength="6" required></label><button class="primary">Entra al tavolo</button></form>
-</div>
+  <div class="intro"><p class="eyebrow">Texas Hold’em multiplayer</p><h1>Ci vediamo al tavolo.</h1><p>Da 2 a 9 giocatori con fiches virtuali.</p></div>
+  <div class="lobby">
+    <form id="create">
+      <h2>Crea un tavolo</h2>
+      <label>Il tuo nome<input name="name" maxlength="24" autocomplete="nickname" required></label>
+      <label>Nome del tavolo<input name="roomName" maxlength="36" value="Serata poker" required></label>
+      <label>Modalità<select name="mode" id="mode"><option value="tournament">Torneo</option><option value="cash">Cash Game</option></select></label>
+      <label>Fiches iniziali<input name="stack" type="number" value="1500" min="20" max="1000000" required></label>
+      <div class="split"><label>Piccolo buio<input name="small" type="number" value="10" min="1" max="9999" required></label><label>Grande buio<input name="big" type="number" value="20" min="2" max="10000" required></label></div>
+      <label id="blindSettings">Aumenta i bui ogni (minuti)<input name="blindMinutes" type="number" value="15" min="1" max="180" required></label>
+      <button class="primary">Crea tavolo</button>
+    </form>
+    <div class="join-stack">
+      <form id="join">
+        <h2>Unisciti</h2>
+        <label>Il tuo nome<input name="name" maxlength="24" autocomplete="nickname" required></label>
+        <label>Codice del tavolo<input name="code" placeholder="A7K4TV" pattern="[A-Za-z2-9]{6}" maxlength="6" required></label>
+        <button class="primary">Entra al tavolo</button>
+      </form>
+      <details class="recover"><summary>Recupera il tuo posto</summary>
+        <form id="recover">
+          <label>Codice del tavolo<input name="code" pattern="[A-Za-z2-9]{6}" maxlength="6" required></label>
+          <label>Codice personale<input name="recoveryCode" minlength="24" maxlength="24" autocomplete="off" spellcheck="false" required></label>
+          <button>Recupera posto</button>
+        </form>
+      </details>
+    </div>
+  </div>
 </section>
 <p id="error" role="alert" hidden></p>
 <section id="game" hidden>
-<div class="game-head"><div><p id="stage" class="eyebrow"></p><h1 id="roomName"></h1></div><div class="invite"><span id="code"></span><button id="copy">Copia invito</button></div></div>
-<section class="felt" aria-label="Tavolo da poker"><p id="pot" class="pot"></p><div id="board" class="cards" aria-label="Carte comuni"></div><p id="turn" role="status"></p></section>
-<div id="seats" class="seats" aria-label="Giocatori"></div>
-<div id="result" role="status" hidden></div>
-<section class="controls" aria-label="Azioni di gioco">
-<button id="start" class="primary" hidden></button>
-<div id="moves" hidden>
-<button id="fold">Passa (fold)</button><button id="call" class="primary"></button>
-<form id="raise" hidden><label for="target">Totale del rilancio</label><input id="target" type="number" step="1" required><button id="raiseButton"></button><button id="allIn" type="button">All-in</button></form>
-</div>
-</section>
+  <div class="game-head">
+    <div><p id="stage" class="eyebrow"></p><h1 id="roomName"></h1></div>
+    <div class="invite"><span id="code"></span><button id="copy">Copia invito</button></div>
+  </div>
+  <div class="table-meta"><span id="blinds"></span><span id="nextBlinds" hidden></span></div>
+  <section class="arena" aria-label="Tavolo da poker">
+    <div class="felt">
+      <div class="community">
+        <p id="pot" class="pot"></p>
+        <div id="board" class="cards" aria-label="Carte comuni"></div>
+        <p id="turn" role="status"></p>
+        <p id="timer" class="timer" hidden></p>
+      </div>
+    </div>
+    <div id="seats" aria-label="Giocatori"></div>
+  </section>
+  <div id="result" class="results" role="status" hidden></div>
+  <section class="table-actions" aria-label="Azioni di gioco">
+    <button id="start" class="primary" hidden>Distribuisci le carte</button>
+    <button id="pause" hidden></button>
+    <div id="moves" hidden>
+      <div class="quick"><button id="fold">Fold</button><button id="call" class="primary"></button><button id="potBet" type="button" hidden></button><button id="doubleBet" type="button" hidden></button></div>
+      <form id="raise" hidden><label for="target">Rilancio totale</label><input id="target" type="number" step="1" required><button id="raiseButton">Rilancia</button><button id="allIn" type="button">All-in</button></form>
+    </div>
+  </section>
+  <section class="panels">
+    <div id="reloadPanel" class="panel" hidden>
+      <h2>Rientro al tavolo</h2>
+      <p id="reloadStatus"></p>
+      <form id="reloadForm" hidden>
+        <label for="reloadAmount">Fiches da ricaricare</label>
+        <div class="split"><input id="reloadAmount" type="number" step="1" min="1" required><button class="primary">Invia richiesta</button></div>
+      </form>
+    </div>
+    <div id="adminPanel" class="panel" hidden><h2>Richieste di ricarica</h2><div id="requests"></div></div>
+    <details id="statsPanel" class="panel"><summary>Statistiche del tavolo</summary><div id="stats"></div></details>
+    <details id="handPanel" class="panel" hidden><summary>Ultima mano</summary><div id="lastHand"></div></details>
+    <details class="panel"><summary>Recupero del posto</summary><p>Conserva questo codice personale. Chi lo possiede può recuperare il tuo posto insieme al codice del tavolo.</p><code id="recoveryCode"></code> <button id="copyRecovery">Copia codice</button></details>
+  </section>
 </section>
 </main>
 </body>
 </html>
-

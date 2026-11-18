@@ -1,7 +1,8 @@
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { networkInterfaces } from 'node:os';
-import { createRoom, getRoom, joinRoom, readRoom, updateRoom } from './rooms.mjs';
+import { openRooms } from './rooms.mjs';
+import { openStore } from './store.mjs';
 import { fail } from './http-error.mjs';
 
 async function loadFrontend() {
@@ -23,6 +24,20 @@ async function loadFrontend() {
 }
 
 const files = await loadFrontend();
+const rooms = await openRooms(await openStore());
+let timerRunning = false;
+const timer = setInterval(async () => {
+  if (timerRunning) return;
+  timerRunning = true;
+  try {
+    await rooms.tick();
+  } catch (error) {
+    console.error('Aggiornamento dei tavoli:', error.message);
+  } finally {
+    timerRunning = false;
+  }
+}, 250);
+timer.unref();
 const frontendOrigins = new Set();
 if (process.env.RENDER_EXTERNAL_HOSTNAME === 'homepoker-e2ns.onrender.com') {
   frontendOrigins.add('https://home-poker-9869.onrender.com');
@@ -85,20 +100,19 @@ const server = createServer(async (req,res) => {
       return res.end(file.body);
     }
     if (req.method === 'POST' && url.pathname === '/api/rooms') {
-      return reply(res,createRoom(await json(req)));
+      return reply(res,await rooms.create(await json(req)));
     }
-    const match = /^\/api\/rooms\/([A-Z2-9]{6})(?:\/(join|action|start))?$/.exec(url.pathname);
+    const match = /^\/api\/rooms\/([A-Z2-9]{6})(?:\/(join|recover|action|start|pause|rebuy|rebuy-decision|leave))?$/.exec(url.pathname);
     if (!match) fail('Tavolo non trovato.',404);
     const [,code,route] = match;
     if (req.method === 'GET' && !route) {
-      return reply(res,readRoom(getRoom(code),req.headers.authorization));
+      return reply(res,await rooms.read(code,req.headers.authorization));
     }
     if (req.method !== 'POST' || !route) fail('Operazione non disponibile.',405);
     const data = await json(req);
-    const room = getRoom(code);
-    const result = route === 'join'
-      ? joinRoom(room,data)
-      : updateRoom(room,req.headers.authorization,route,data);
+    if (route === 'join') return reply(res,await rooms.join(code,data));
+    if (route === 'recover') return reply(res,await rooms.recover(code,data));
+    const result = await rooms.update(code,req.headers.authorization,route,data);
     reply(res,result);
   } catch (error) {
     res.statusCode = error.status ?? 500;
@@ -117,7 +131,4 @@ server.listen(port,process.env.HOLDEM_HOST ?? '0.0.0.0',() => {
     }
   }
 });
-
-
-
 
