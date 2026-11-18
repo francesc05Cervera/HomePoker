@@ -55,8 +55,9 @@ async function request(path, {body,token} = {}) {
 }
 
 function showError(message) {
-  el('error').textContent = message;
-  el('error').hidden = !message;
+  const error = el('recoverDialog').open ? el('recoverError') : el('error');
+  error.textContent = message;
+  error.hidden = !message;
 }
 
 function node(tag, text, className) {
@@ -276,6 +277,7 @@ async function enter(path, body) {
   showError('');
   try {
     const data = await request(path,{body});
+    if (el('recoverDialog').open) el('recoverDialog').close();
     sessionFor({code:data.state.code,token:data.token});
     state = null;
     el('connection').textContent = 'Connesso';
@@ -310,6 +312,7 @@ async function send(route, data = {}) {
 
 function closeTable() {
   const code = session?.code;
+  if (el('recoveryCodeDialog').open) el('recoveryCodeDialog').close();
   sessionFor(null);
   state = null;
   clockState = null;
@@ -352,6 +355,16 @@ for (const route of ['join','recover']) {
   };
   if (urlCode && /^[A-Z2-9]{6}$/.test(urlCode)) el(route).elements.code.value = urlCode;
 }
+el('openRecover').onclick = () => {
+  showError('');
+  const code = el('join').elements.code.value.trim();
+  if (/^[A-Za-z2-9]{6}$/.test(code)) el('recover').elements.code.value = code.toUpperCase();
+  el('recoverError').hidden = true;
+  el('recoverDialog').showModal();
+};
+el('cancelRecover').onclick = () => el('recoverDialog').close();
+el('openRecoveryCode').onclick = () => el('recoveryCodeDialog').showModal();
+el('closeRecoveryCode').onclick = () => el('recoveryCodeDialog').close();
 el('start').onclick = () => send('start');
 el('pause').onclick = () => send('pause',{paused:!state.paused});
 el('fold').onclick = () => send('action',{move:'fold'});

@@ -22,10 +22,16 @@ h2,.panel summary{font-size:22px}
 .intro p:last-child{color:var(--muted);margin-top:12px}
 .eyebrow{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.13em;margin-bottom:6px}
 .lobby,.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.lobby form,.recover,.panel{border:1px solid var(--line);background:#19251ee8;border-radius:14px;padding:17px}
+.lobby{align-items:start}
+.lobby form,.panel,dialog{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:17px}
 .lobby form{display:grid;gap:12px;align-content:start}
-.join-stack{display:grid;gap:12px;align-content:start}
-.recover form{border:0;padding:12px 0 0}
+dialog{width:min(440px,calc(100% - 30px));color:var(--text)}
+dialog::backdrop{background:#07100cbd}
+dialog form{display:grid;gap:12px}
+dialog p{margin-block:8px;color:var(--muted)}
+.dialog-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+#recoveryCode{display:block;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;margin:12px 0;overflow-wrap:anywhere;user-select:all}
+#recoverError{color:var(--danger);margin:0}
 label{display:grid;gap:4px}
 input,select{width:100%;min-width:0;background:#202f25}
 summary{cursor:pointer}

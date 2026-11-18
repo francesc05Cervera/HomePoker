@@ -25,28 +25,20 @@
       <label id="blindSettings">Aumenta i bui ogni (minuti)<input name="blindMinutes" type="number" value="15" min="1" max="180" required></label>
       <button class="primary">Crea tavolo</button>
     </form>
-    <div class="join-stack">
-      <form id="join">
-        <h2>Unisciti</h2>
-        <label>Il tuo nome<input name="name" maxlength="24" autocomplete="nickname" required></label>
-        <label>Codice del tavolo<input name="code" placeholder="A7K4TV" pattern="[A-Za-z2-9]{6}" maxlength="6" required></label>
-        <button class="primary">Entra al tavolo</button>
-      </form>
-      <details class="recover"><summary>Recupera il tuo posto</summary>
-        <form id="recover">
-          <label>Codice del tavolo<input name="code" pattern="[A-Za-z2-9]{6}" maxlength="6" required></label>
-          <label>Codice personale<input name="recoveryCode" minlength="24" maxlength="24" autocomplete="off" spellcheck="false" required></label>
-          <button>Recupera posto</button>
-        </form>
-      </details>
-    </div>
+    <form id="join">
+      <h2>Unisciti</h2>
+      <label>Il tuo nome<input name="name" maxlength="24" autocomplete="nickname" required></label>
+      <label>Codice del tavolo<input name="code" placeholder="A7K4TV" pattern="[A-Za-z2-9]{6}" maxlength="6" required></label>
+      <button class="primary">Entra al tavolo</button>
+      <button id="openRecover" type="button">Recupera il tuo posto</button>
+    </form>
   </div>
 </section>
 <p id="error" role="alert" hidden></p>
 <section id="game" hidden>
   <div class="game-head">
     <div><p id="stage" class="eyebrow"></p><h1 id="roomName"></h1></div>
-    <div class="invite"><span id="code"></span><button id="copy">Copia invito</button></div>
+    <div class="invite"><span id="code"></span><button id="copy">Copia invito</button><button id="openRecoveryCode">Il mio codice di recupero</button></div>
   </div>
   <div class="table-meta"><span id="blinds"></span><span id="nextBlinds" hidden></span></div>
   <section class="arena" aria-label="Tavolo da poker">
@@ -80,9 +72,23 @@
     </div>
     <div id="adminPanel" class="panel" hidden><h2>Richieste di ricarica</h2><div id="requests"></div></div>
     <details id="handPanel" class="panel" hidden><summary>Ultima mano</summary><div id="lastHand"></div></details>
-    <details class="panel"><summary>Recupero del posto</summary><p>Conserva questo codice personale. Chi lo possiede può recuperare il tuo posto insieme al codice del tavolo.</p><code id="recoveryCode"></code> <button id="copyRecovery">Copia codice</button></details>
   </section>
 </section>
 </main>
+<dialog id="recoverDialog" aria-labelledby="recoverTitle">
+  <form id="recover">
+    <h2 id="recoverTitle">Recupera il tuo posto</h2>
+    <label>Codice del tavolo<input name="code" pattern="[A-Za-z2-9]{6}" maxlength="6" required></label>
+    <label>Codice personale<input name="recoveryCode" minlength="24" maxlength="24" autocomplete="off" spellcheck="false" required></label>
+    <p id="recoverError" role="alert" hidden></p>
+    <div class="dialog-actions"><button id="cancelRecover" type="button">Annulla</button><button class="primary">Recupera posto</button></div>
+  </form>
+</dialog>
+<dialog id="recoveryCodeDialog" aria-labelledby="recoveryCodeTitle">
+  <h2 id="recoveryCodeTitle">Il mio codice di recupero</h2>
+  <p>Conservalo insieme al codice del tavolo. Tienilo per te.</p>
+  <code id="recoveryCode"></code>
+  <div class="dialog-actions"><button id="closeRecoveryCode">Chiudi</button><button id="copyRecovery" class="primary">Copia codice</button></div>
+</dialog>
 </body>
 </html>
