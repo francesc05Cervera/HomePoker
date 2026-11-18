@@ -355,6 +355,9 @@ for (const route of ['join','recover']) {
   };
   if (urlCode && /^[A-Z2-9]{6}$/.test(urlCode)) el(route).elements.code.value = urlCode;
 }
+if (!session && /^[A-Z2-9]{6}$/.test(urlCode ?? '')) {
+  addEventListener('load', () => el('join').scrollIntoView(), {once:true});
+}
 el('openRecover').onclick = () => {
   showError('');
   const code = el('join').elements.code.value.trim();

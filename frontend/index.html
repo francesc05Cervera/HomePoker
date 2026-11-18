@@ -13,24 +13,38 @@
 <header class="site-header"><a class="brand" href="/"><span aria-hidden="true">♠</span> HomePoker</a><span id="connection"></span><button id="exit" hidden>Lascia il tavolo</button></header>
 <main>
 <section id="home">
-  <div class="intro"><p class="eyebrow">Texas Hold’em multiplayer</p><h1>Ci vediamo al tavolo.</h1><p>Da 2 a 9 giocatori con fiches virtuali.</p></div>
+  <div class="home-hero">
+    <img class="home-hero-image" src="/home-hero.webp" width="1360" height="664" alt="" fetchpriority="high">
+    <div class="home-hero-content">
+      <h1>La serata inizia<br><em>al tavolo.</em></h1>
+      <p>Texas Hold’em tra amici. Da 2 a 9 giocatori, con fiches virtuali.</p>
+      <nav class="home-hero-actions" aria-label="Inizia a giocare">
+        <a class="primary" href="#create">Crea un tavolo</a>
+        <a class="hero-secondary" href="#join">Ho un codice</a>
+      </nav>
+    </div>
+  </div>
   <div class="lobby">
-    <form id="create">
+    <form id="create" class="home-form">
       <h2>Crea un tavolo</h2>
-      <label>Il tuo nome<input name="name" maxlength="24" autocomplete="nickname" required></label>
-      <label>Nome del tavolo<input name="roomName" maxlength="36" value="Serata poker" required></label>
-      <label>Modalità<select name="mode" id="mode"><option value="tournament">Torneo</option><option value="cash">Cash Game</option></select></label>
-      <label>Fiches iniziali<input name="stack" type="number" value="1500" min="20" max="1000000" required></label>
+      <div class="split">
+        <label>Il tuo nome<input name="name" maxlength="24" autocomplete="nickname" required></label>
+        <label>Nome del tavolo<input name="roomName" maxlength="36" value="Serata poker" required></label>
+      </div>
+      <div class="split">
+        <label>Modalità<select name="mode" id="mode"><option value="tournament">Torneo</option><option value="cash">Cash Game</option></select></label>
+        <label>Fiches iniziali<input name="stack" type="number" value="1500" min="20" max="1000000" required></label>
+      </div>
       <div class="split"><label>Piccolo buio<input name="small" type="number" value="10" min="1" max="9999" required></label><label>Grande buio<input name="big" type="number" value="20" min="2" max="10000" required></label></div>
       <label id="blindSettings">Aumenta i bui ogni (minuti)<input name="blindMinutes" type="number" value="15" min="1" max="180" required></label>
       <button class="primary">Crea tavolo</button>
     </form>
-    <form id="join">
-      <h2>Unisciti</h2>
+    <form id="join" class="home-form">
+      <h2>Entra al tavolo</h2>
       <label>Il tuo nome<input name="name" maxlength="24" autocomplete="nickname" required></label>
       <label>Codice del tavolo<input name="code" placeholder="A7K4TV" pattern="[A-Za-z2-9]{6}" maxlength="6" required></label>
       <button class="primary">Entra al tavolo</button>
-      <button id="openRecover" type="button">Recupera il tuo posto</button>
+      <button id="openRecover" class="recover-link" type="button">Recupera il tuo posto <span aria-hidden="true">↗</span></button>
     </form>
   </div>
 </section>
