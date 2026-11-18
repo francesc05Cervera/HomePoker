@@ -2,8 +2,8 @@ import { act, actions, inHand, reveal, seated, start } from './poker.mjs';
 
 const turnTime = 60_000;
 const pauseTime = 45_000;
-const betweenHands = 5_000;
-const revealTime = 3_000;
+const betweenHands = 2_000;
+const revealTime = 2_000;
 export const heartbeatTimeout = 6_000;
 export const activeHand = room => room.phase !== 'lobby' && room.phase !== 'result';
 export const readyCount = room => room.players.filter(seated).length;

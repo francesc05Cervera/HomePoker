@@ -48,6 +48,7 @@
         <div id="board" class="cards" aria-label="Carte comuni"></div>
         <p id="turn" role="status"></p>
         <p id="timer" class="timer" hidden></p>
+        <p id="oddsNote" class="odds-note" hidden></p>
       </div>
     </div>
     <div id="seats" aria-label="Giocatori"></div>
@@ -89,6 +90,15 @@
   <p>Conservalo insieme al codice del tavolo. Tienilo per te.</p>
   <code id="recoveryCode"></code>
   <div class="dialog-actions"><button id="closeRecoveryCode">Chiudi</button><button id="copyRecovery" class="primary">Copia codice</button></div>
+</dialog>
+<dialog id="rebuyNotice" aria-labelledby="rebuyNoticeTitle">
+  <div class="rebuy-notice-content">
+    <h2 id="rebuyNoticeTitle"></h2>
+    <p id="rebuyNoticeText" hidden></p>
+    <div id="rebuyNoticeRequests"></div>
+    <p id="rebuyNoticeError" role="alert" hidden></p>
+    <div class="dialog-actions"><button id="closeRebuyNotice" type="button">Chiudi</button></div>
+  </div>
 </dialog>
 <dialog id="ageGate" aria-labelledby="ageTitle" aria-describedby="ageDescription ageAdvice">
   <h2 id="ageTitle">Hai almeno 18 anni?</h2>

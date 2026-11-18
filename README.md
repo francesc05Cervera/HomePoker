@@ -17,11 +17,11 @@ Apri http://localhost:8080. Usa due profili o contesti del browser per giocare c
 
 - In Torneo, il piccolo e il grande buio raddoppiano a ogni livello. L’admin imposta l’intervallo. I bui si aggiornano alla mano successiva. I giocatori eliminati possono continuare a osservare il tavolo.
 - In Cash Game, i bui restano fissi. Un giocatore senza fiches può inviare una richiesta di ricarica da 1 fino a 2× lo stack iniziale. L’admin può accettarla o rifiutarla durante qualsiasi fase. La ricarica viene applicata quando il giocatore riceve le carte nella mano successiva.
-- L’admin avvia la prima mano. Quando ci sono almeno due giocatori pronti, la prossima mano parte 5 secondi dopo il risultato. L’admin può fermare l’avvio tra le mani.
-- Un turno dura 60 secondi. A tempo scaduto il server fa check se non ci sono fiches da chiamare, altrimenti fold. Con un all-in e nessuna azione rimanente, il server rivela le strade mancanti ogni 3 secondi. Il flop esce in un unico gruppo.
+- L’admin avvia la prima mano. Quando ci sono almeno due giocatori pronti, la prossima mano parte 2 secondi dopo il risultato. L’admin può fermare l’avvio tra le mani.
+- Un turno dura 60 secondi. A tempo scaduto il server fa check se non ci sono fiches da chiamare, altrimenti fold. Con un all-in chiamato e nessuna azione rimanente, il server mostra le carte dei giocatori ancora in mano e rivela le strade mancanti ogni 2 secondi. Il flop esce in un unico gruppo. Le probabilità del piatto principale sono stimate al preflop e calcolate su tutti i completamenti possibili dal flop in poi.
 - Le richieste di stato fungono da segnale di presenza. Se per 6 secondi il server non riceve richieste da un giocatore ancora in mano, congela la mano e i timer per massimo 45 secondi. Al rientro ripristina il posto, oppure fa ripartire i timer dal residuo allo scadere dell’attesa.
 - Il codice personale permette di riprendere il posto da un altro dispositivo insieme al codice del tavolo. L’uscita volontaria lo invalida. Un giocatore già all-in conserva il diritto al piatto fino alla fine della mano.
-- Carte coperte, mazzo e credenziali restano sul server. Solo il proprietario del posto vede il codice personale e le proprie carte prima dello showdown. Le stanze scadono dopo 24 ore senza operazioni di gioco o modifiche.
+- Il mazzo e le credenziali restano sul server. Solo il proprietario del posto vede il codice personale. Le mani ancora in gioco diventano pubbliche allo showdown o quando un all-in chiamato chiude le puntate. Le carte dei giocatori che hanno fatto fold restano riservate. Le stanze scadono dopo 24 ore senza operazioni di gioco o modifiche.
 
 ## Deploy su Render
 
@@ -50,7 +50,7 @@ Le richieste POST usano JSON. Creazione, iscrizione e recupero restituiscono tok
 | POST | /api/rooms/:code/start | — |
 | POST | /api/rooms/:code/action | move, target per raise |
 | POST | /api/rooms/:code/rebuy | amount |
-| POST | /api/rooms/:code/rebuy-decision | player, accept |
+| POST | /api/rooms/:code/rebuy-decision | player, requestId, accept |
 | POST | /api/rooms/:code/pause | paused |
 | POST | /api/rooms/:code/leave | — |
 

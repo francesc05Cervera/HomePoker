@@ -2,10 +2,20 @@ const apiOrigin = document.querySelector('meta[name=api-origin]').content;
 const el = id => document.getElementById(id);
 const numeral = new Intl.NumberFormat('it-IT');
 const number = value => numeral.format(value);
+const oddsPercent = new Intl.NumberFormat('it-IT',{style:'percent',maximumFractionDigits:1});
 const phases = {lobby:'Lobby', preflop:'Preflop', flop:'Flop', turn:'Turn', river:'River', result:'Risultato'};
 const suits = {s:'♠', h:'♥', d:'♦', c:'♣'};
 const suitNames = {s:'picche', h:'cuori', d:'quadri', c:'fiori'};
 const fullTable = [[50,90],[77,82],[88,59],[88,35],[65,11],[35,11],[12,35],[12,59],[23,82]];
+const mobileSeats = {
+  3:[[50,90],[79,15],[21,15]],
+  4:[[50,90],[87,69],[50,11],[13,69]],
+  5:[[50,90],[87,69],[78,15],[22,15],[13,69]],
+  6:[[50,90],[88,69],[88,30],[50,11],[12,30],[12,69]],
+  7:[[50,90],[88,69],[88,33],[65,10],[35,10],[12,33],[12,69]],
+  8:[[50,91],[78,89],[88,66],[86,31],[50,10],[14,31],[12,66],[22,89]],
+  9:[[50,91],[78,89],[88,66],[88,31],[65,10],[35,10],[12,31],[12,66],[22,89]],
+};
 const urlCode = new URLSearchParams(location.search).get('join')?.toUpperCase();
 const sessionKey = 'holdem-session';
 let session = savedSession();
@@ -13,6 +23,7 @@ let state;
 let clockState;
 let busy = false;
 let polling = false;
+let seenRebuys = new Set();
 
 function savedSession() {
   try {
@@ -55,7 +66,8 @@ async function request(path, {body,token} = {}) {
 }
 
 function showError(message) {
-  const error = el('recoverDialog').open ? el('recoverError') : el('error');
+  const error = el('recoverDialog').open ? el('recoverError') :
+    el('rebuyNotice').open ? el('rebuyNoticeError') : el('error');
   error.textContent = message;
   error.hidden = !message;
 }
@@ -97,14 +109,21 @@ function seatNodes(current) {
   return ordered.map((player,index) => {
     const ownSeat = player.id === current.me;
     const seat = node('article',null,'seat');
+    seat.dataset.player = player.id;
     seat.classList.toggle('mine',ownSeat);
     seat.classList.toggle('acting',current.actor === player.id);
     seat.classList.toggle('folded',player.folded);
     const angle = index * 2 * Math.PI / ordered.length;
     const [left,top] = ordered.length === 9
       ? fullTable[index] : [50 + 38 * Math.sin(angle),50 + 40 * Math.cos(angle)];
-    seat.style.left = left + '%';
-    seat.style.top = top + '%';
+    const [mobileLeft,mobileTop] = mobileSeats[ordered.length]?.[index] ?? [left,top];
+    seat.style.setProperty('--seat-x',left + '%');
+    seat.style.setProperty('--seat-y',top + '%');
+    seat.style.setProperty('--seat-mobile-x',mobileLeft + '%');
+    seat.style.setProperty('--seat-mobile-y',mobileTop + '%');
+    const odds = node('span',null,'seat-odds');
+    odds.hidden = true;
+    seat.append(odds);
     const status = player.leaving ? 'In uscita' : player.waiting ? 'Prossima mano' :
       player.busted ? (current.mode === 'cash' ? 'Senza fiches' : 'Eliminato') :
       player.folded ? 'Fold' : player.stack === 0 && player.inHand ? 'All-in' : '';
@@ -130,6 +149,69 @@ function seatNodes(current) {
   });
 }
 
+function renderOdds(current) {
+  const note = el('oddsNote');
+  note.hidden = !current.runout;
+  note.textContent = !current.odds ? 'Calcolo delle probabilità…' :
+    'Vittoria nel piatto principale' + (current.odds.estimated ? ' · stima' : '');
+  const players = new Map(current.odds?.players.map(player => [player.id,player]));
+  for (const seat of el('seats').children) {
+    const odds = players.get(seat.dataset.player);
+    const pill = seat.querySelector('.seat-odds');
+    pill.hidden = !odds;
+    if (odds) {
+      pill.textContent = oddsPercent.format(odds.win);
+      const description = 'Vittoria ' + pill.textContent + ' · Pareggio ' + oddsPercent.format(odds.tie);
+      pill.title = description;
+      pill.setAttribute('aria-label',description);
+    }
+  }
+}
+
+function requestRows(requests) {
+  return requests.map(entry => {
+    const row = node('div',null,'row');
+    const buttons = node('div',null,'row-actions');
+    for (const accept of [true,false]) {
+      const button = node('button',accept ? 'Accetta' : 'Rifiuta',accept ? 'primary' : '');
+      button.onclick = () => send('rebuy-decision',{player:entry.id,requestId:entry.requestId,accept});
+      buttons.append(button);
+    }
+    row.append(node('span',entry.name + ' · ' + number(entry.amount) + ' fiches'),buttons);
+    return row;
+  });
+}
+
+function openRebuyNotice(kind, title, message = '') {
+  const dialog = el('rebuyNotice');
+  dialog.dataset.kind = kind;
+  el('rebuyNoticeTitle').textContent = title;
+  el('rebuyNoticeText').hidden = !message;
+  el('rebuyNoticeText').textContent = message;
+  el('rebuyNoticeError').hidden = true;
+  el('closeRebuyNotice').textContent = kind === 'admin' ? 'Più tardi' : 'Chiudi';
+  if (!dialog.open) dialog.showModal();
+}
+
+function syncRebuyNotice(current) {
+  const dialog = el('rebuyNotice');
+  const keys = current.requests.map(entry => entry.requestId ?? (entry.id + ':' + entry.amount));
+  const fresh = keys.some(key => !seenRebuys.has(key));
+  seenRebuys = new Set(keys.filter(key => seenRebuys.has(key)));
+  const isAdminNotice = dialog.open && dialog.dataset.kind === 'admin';
+  if (isAdminNotice && !keys.length) {
+    dialog.close();
+    return;
+  }
+  if ((!fresh && !isAdminNotice) || document.querySelector('dialog[open]:not(#rebuyNotice)')) return;
+  seenRebuys = new Set(keys);
+  const signature = keys.join(',');
+  if (isAdminNotice && dialog.dataset.requestsKey === signature) return;
+  dialog.dataset.requestsKey = signature;
+  el('rebuyNoticeRequests').replaceChildren(...requestRows(current.requests));
+  openRebuyNotice('admin',keys.length > 1 ? 'Richieste di ricarica' : 'Richiesta di ricarica');
+}
+
 function renderPanels(current) {
   const reload = current.reload;
   const showReload = reload.eligible || reload.request !== null || reload.approved !== null;
@@ -144,17 +226,7 @@ function renderPanels(current) {
     : (reload.status === 'refused' ? 'Richiesta rifiutata. ' : '') + 'Puoi chiedere fino a ' + number(reload.max) + ' fiches.';
 
   el('adminPanel').hidden = !current.requests.length;
-  el('requests').replaceChildren(...current.requests.map(entry => {
-    const row = node('div',null,'row');
-    const buttons = node('div',null,'row-actions');
-    for (const accept of [true,false]) {
-      const button = node('button',accept ? 'Accetta' : 'Rifiuta',accept ? 'primary' : '');
-      button.onclick = () => send('rebuy-decision',{player:entry.id,accept});
-      buttons.append(button);
-    }
-    row.append(node('span',entry.name + ' · ' + number(entry.amount) + ' fiches'),buttons);
-    return row;
-  }));
+  el('requests').replaceChildren(...requestRows(current.requests));
   el('handPanel').hidden = !current.lastHand;
   if (current.lastHand) {
     const {number:hand, board, pots, revealed} = current.lastHand;
@@ -199,7 +271,10 @@ function render(current) {
   if (!session || current.code !== session.code || state?.version > current.version) return;
   clockState = {snapshot:current,at:performance.now()};
   updateClocks();
-  if (state?.version === current.version) return;
+  if (state?.version === current.version) {
+    renderOdds(current);
+    return;
+  }
   const previousActor = state?.actor;
   const previousHand = state?.hand;
   const previousPhase = state?.phase;
@@ -225,6 +300,7 @@ function render(current) {
   if (current.champion) status = current.champion + ' vince il torneo';
   el('turn').textContent = status;
   el('seats').replaceChildren(...seatNodes(current));
+  renderOdds(current);
   el('result').hidden = !current.results.length;
   el('result').replaceChildren(...current.results.map(result => node('p',result.name + ' vince ' + number(result.amount) + ' fiches · ' + result.hand)));
   el('start').hidden = me !== host || phase !== 'lobby';
@@ -232,6 +308,7 @@ function render(current) {
   el('pause').hidden = me !== host || phase !== 'result' || !!current.champion;
   el('pause').textContent = current.paused ? 'Riprendi avvio automatico' : 'Pausa tra le mani';
   renderPanels(current);
+  syncRebuyNotice(current);
   el('moves').hidden = !actions;
   if (!actions) return;
   el('call').textContent = actions.call ? 'Chiama ' + number(actions.call) : 'Check';
@@ -300,7 +377,14 @@ async function send(route, data = {}) {
     });
     if (session === active) {
       if (route === 'leave') closeTable();
-      else render(response);
+      else {
+        render(response);
+        if (route === 'rebuy' && !el('rebuyNotice').open) {
+          el('rebuyNoticeRequests').replaceChildren();
+          openRebuyNotice('receipt','Richiesta inviata',
+            number(data.amount) + ' fiches richieste. Attendi la risposta dell’admin.');
+        }
+      }
     }
   } catch (error) {
     if (session === active) showError(error.message);
@@ -313,6 +397,8 @@ async function send(route, data = {}) {
 function closeTable() {
   const code = session?.code;
   if (el('recoveryCodeDialog').open) el('recoveryCodeDialog').close();
+  if (el('rebuyNotice').open) el('rebuyNotice').close();
+  seenRebuys.clear();
   sessionFor(null);
   state = null;
   clockState = null;
@@ -365,6 +451,10 @@ el('openRecover').onclick = () => {
 el('cancelRecover').onclick = () => el('recoverDialog').close();
 el('openRecoveryCode').onclick = () => el('recoveryCodeDialog').showModal();
 el('closeRecoveryCode').onclick = () => el('recoveryCodeDialog').close();
+el('recoveryCodeDialog').addEventListener('close',() => {
+  if (state) syncRebuyNotice(state);
+});
+el('closeRebuyNotice').onclick = () => el('rebuyNotice').close();
 el('start').onclick = () => send('start');
 el('pause').onclick = () => send('pause',{paused:!state.paused});
 el('fold').onclick = () => send('action',{move:'fold'});

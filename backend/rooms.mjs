@@ -2,6 +2,7 @@ import { randomInt, randomBytes, timingSafeEqual } from 'node:crypto';
 import { act, actions, foldLeavingPlayer, inHand, GameError, potSize, restoreDeck, snapshotDeck } from './poker.mjs';
 import { activeHand, afterPlay, disconnected, finishRoster, heartbeatTimeout, nextBlinds, readyCount, setManualPause, startHand, syncNext, tickGame } from './clock.mjs';
 import { fail } from './http-error.mjs';
+import { runoutOdds } from './runout-odds.mjs';
 
 const maxAge = 24*60*60*1000;
 const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -18,7 +19,7 @@ function addPlayer(room, name) {
     id:randomBytes(8).toString('hex'), token:randomBytes(32).toString('hex'),
     recoveryCode:randomBytes(18).toString('base64url'),
     name, stack:room.stack, loaded:room.stack, wins:0, rebuys:0,
-    busted:false, leaving:false, rebuyRequest:null, rebuyReady:null, rebuyStatus:null,
+    busted:false, leaving:false, rebuyRequest:null, rebuyRequestId:null, rebuyReady:null, rebuyStatus:null,
     cards:[], folded:false, street:0, total:0, actedAt:null,
   };
   room.players.push(player);
@@ -50,6 +51,7 @@ function view(room, viewer, now) {
     board:room.board, small:room.small, big:room.big, level:room.level,
     pot:potSize(room), results:room.results, lastHand:room.lastHand,
     actions:actions(room,viewer), recoveryCode:viewer.recoveryCode, runout:room.runout,
+    odds:runoutOdds(room),
     ready:readyCount(room), champion:championship ? activePlayers.find(player => player.stack > 0)?.name ?? null : null,
     paused:room.manualPause !== null,
     disconnect:room.disconnect && {
@@ -64,7 +66,7 @@ function view(room, viewer, now) {
       eligible:room.mode === 'cash' && viewer.busted && viewer.rebuyRequest === null && viewer.rebuyReady === null,
     },
     requests:viewer.id === room.host
-      ? pending.map(player => ({id:player.id,name:player.name,amount:player.rebuyRequest}))
+      ? pending.map(player => ({id:player.id,requestId:player.rebuyRequestId ?? null,name:player.name,amount:player.rebuyRequest}))
       : [],
     players:room.players.filter(player => !player.leaving || inHand(player)).map(player => ({
       id:player.id, name:player.name, stack:player.stack, street:player.street,
@@ -73,7 +75,7 @@ function view(room, viewer, now) {
       loaded:player.loaded, wins:player.wins, rebuys:player.rebuys,
       net:player.stack - player.loaded,
       busted:player.busted,
-      cards:player === viewer || (room.showdown && inHand(player)) ? player.cards : player.cards.map(() => null)
+      cards:player === viewer || ((room.runout || room.showdown) && inHand(player)) ? player.cards : player.cards.map(() => null)
     }))
   };
 }
@@ -106,12 +108,16 @@ function requestRebuy(room, player, amount) {
     fail('Scegli un importo intero tra 1 e ' + room.stack*2 + ' fiches.');
   }
   player.rebuyRequest = amount;
+  player.rebuyRequestId = randomBytes(8).toString('hex');
   player.rebuyStatus = 'pending';
 }
 
 function resolveRebuy(room, input, now) {
   const player = room.players.find(p => p.id === input.player && !p.leaving && p.rebuyRequest !== null);
-  if (!player || typeof input.accept !== 'boolean') fail('Richiesta di ricarica non valida.',409);
+  if (!player || typeof input.accept !== 'boolean' ||
+      (typeof input.requestId === 'string' && input.requestId !== player.rebuyRequestId)) {
+    fail('Richiesta di ricarica non valida.',409);
+  }
   if (input.accept) {
     player.rebuyReady = player.rebuyRequest;
     player.rebuyStatus = 'approved';
@@ -119,6 +125,7 @@ function resolveRebuy(room, input, now) {
     player.rebuyStatus = 'refused';
   }
   player.rebuyRequest = null;
+  player.rebuyRequestId = null;
   syncNext(room, now);
 }
 
@@ -174,6 +181,7 @@ export async function openRooms(store, clock = Date.now) {
       fail('Il tavolo è cambiato. Riprova.',409);
     }
     rooms.set(room.code,room);
+    runoutOdds(room);
   }
   for (const snapshot of await store.all()) {
     const room = attach(snapshot);
@@ -297,7 +305,8 @@ export async function openRooms(store, clock = Date.now) {
         const old = await advance(existing,now,caller.id);
         const room = copy(old);
         const player = auth(authorization,room);
-        if (input.version !== room.version) fail('Il tavolo è cambiato. Riprova.',409);
+        const requestSpecific = route === 'rebuy-decision' && typeof input.requestId === 'string';
+        if (route !== 'rebuy' && !requestSpecific && input.version !== room.version) fail('Il tavolo è cambiato. Riprova.',409);
         if (['start','pause','rebuy-decision'].includes(route) && room.host !== player.id) {
           fail('Operazione riservata all’admin del tavolo.',403);
         }
