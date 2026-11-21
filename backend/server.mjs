@@ -16,6 +16,7 @@ async function loadFrontend() {
   const assets = [
     ['/', 'index.html', 'text/html'],
     ['/app.js', 'app.js', 'text/javascript'],
+    ['/audio.js', 'audio.js', 'text/javascript'],
     ['/style.css', 'style.css', 'text/css']
   ];
   return new Map(await Promise.all(assets.map(async ([path, file, mime]) => [

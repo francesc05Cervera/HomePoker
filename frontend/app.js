@@ -1,3 +1,5 @@
+import { audioEnabled, enableAudio, toggleAudio, playCards, playChips, playVictory } from './audio.js';
+
 const apiOrigin = document.querySelector('meta[name=api-origin]').content;
 const el = id => document.getElementById(id);
 const numeral = new Intl.NumberFormat('it-IT');
@@ -24,6 +26,7 @@ let clockState;
 let busy = false;
 let polling = false;
 let seenRebuys = new Set();
+let seenOutcome;
 
 function savedSession() {
   try {
@@ -67,7 +70,8 @@ async function request(path, {body,token} = {}) {
 
 function showError(message) {
   const error = el('recoverDialog').open ? el('recoverError') :
-    el('rebuyNotice').open ? el('rebuyNoticeError') : el('error');
+    el('rebuyNotice').open ? el('rebuyNoticeError') :
+    el('victory').open ? el('outcomeError') : el('error');
   error.textContent = message;
   error.hidden = !message;
 }
@@ -145,8 +149,35 @@ function seatNodes(current) {
     }
     seat.append(stats);
     if (player.cards.length) seat.append(cardRow(player.cards));
+    if (ownSeat && current.point) seat.append(node('p',current.point,'hand-point'));
     return seat;
   });
+}
+
+function showTournamentOutcome(current) {
+  if (current.mode !== 'tournament' || document.querySelector('dialog[open]')) return;
+  const won = current.championId === current.me;
+  const eliminated = current.players.find(player => player.id === current.me)?.busted;
+  if (!won && !eliminated) return;
+  const outcome = won ? 'win' : 'loss';
+  const key = current.code + ':' + current.me + ':' + outcome;
+  if (seenOutcome === key) return;
+  try {
+    if (sessionStorage.getItem('homepoker-tournament-outcome') === key) return;
+    sessionStorage.setItem('homepoker-tournament-outcome',key);
+  } catch {}
+  seenOutcome = key;
+  const dialog = el('victory');
+  dialog.dataset.outcome = outcome;
+  el('outcomeLabel').textContent = won ? 'Torneo concluso' : 'Sei stato eliminato';
+  el('victoryTitle').textContent = won ? 'Hai vinto!' : 'Hai perso';
+  el('victoryRoom').textContent = current.roomName;
+  el('outcomeMessage').textContent = 'Puoi continuare a seguire il torneo come spettatore.';
+  el('outcomeMessage').hidden = won;
+  el('outcomeWatch').hidden = won;
+  el('outcomeError').hidden = true;
+  dialog.showModal();
+  if (won) playVictory();
 }
 
 function renderOdds(current) {
@@ -279,6 +310,14 @@ function render(current) {
   const previousHand = state?.hand;
   const previousPhase = state?.phase;
   const oldMin = state?.actions?.min;
+  if (state && state.code === current.code) {
+    const bets = (current.chipAction ?? 0) - (state.chipAction ?? 0);
+    if (bets > 0) playChips(Math.min(bets,2));
+    if (current.hand > state.hand) playCards(2);
+    else if (current.board.length > state.board.length) {
+      playCards(Math.min(3,current.board.length-state.board.length));
+    }
+  }
   state = current;
   const {players,actor,me,host,phase,hand,actions} = current;
   el('home').hidden = true;
@@ -309,6 +348,7 @@ function render(current) {
   el('pause').textContent = current.paused ? 'Riprendi avvio automatico' : 'Pausa tra le mani';
   renderPanels(current);
   syncRebuyNotice(current);
+  showTournamentOutcome(current);
   el('moves').hidden = !actions;
   if (!actions) return;
   el('call').textContent = actions.call ? 'Chiama ' + number(actions.call) : 'Check';
@@ -376,7 +416,11 @@ async function send(route, data = {}) {
       token:active.token,body:{version:state.version,...data},
     });
     if (session === active) {
-      if (route === 'leave') closeTable();
+      if (route === 'leave') {
+        closeTable();
+        history.replaceState(null,'',location.pathname);
+        window.scrollTo(0,0);
+      }
       else {
         render(response);
         if (route === 'rebuy' && !el('rebuyNotice').open) {
@@ -397,6 +441,7 @@ async function send(route, data = {}) {
 function closeTable() {
   const code = session?.code;
   if (el('recoveryCodeDialog').open) el('recoveryCodeDialog').close();
+  if (el('victory').open) el('victory').close();
   if (el('rebuyNotice').open) el('rebuyNotice').close();
   seenRebuys.clear();
   sessionFor(null);
@@ -452,9 +497,17 @@ el('cancelRecover').onclick = () => el('recoverDialog').close();
 el('openRecoveryCode').onclick = () => el('recoveryCodeDialog').showModal();
 el('closeRecoveryCode').onclick = () => el('recoveryCodeDialog').close();
 el('recoveryCodeDialog').addEventListener('close',() => {
-  if (state) syncRebuyNotice(state);
+  if (state) {
+    syncRebuyNotice(state);
+    showTournamentOutcome(state);
+  }
 });
 el('closeRebuyNotice').onclick = () => el('rebuyNotice').close();
+el('outcomeHome').onclick = () => send('leave');
+el('outcomeWatch').onclick = () => el('victory').close();
+el('victory').addEventListener('cancel',event => {
+  if (el('victory').dataset.outcome === 'win') event.preventDefault();
+});
 el('start').onclick = () => send('start');
 el('pause').onclick = () => send('pause',{paused:!state.paused});
 el('fold').onclick = () => send('action',{move:'fold'});
@@ -480,6 +533,15 @@ el('copy').onclick = () => {
 };
 el('copyRecovery').onclick = () => copyText(el('copyRecovery'),state.recoveryCode,'Copia il codice personale');
 const ageGate = el('ageGate');
+function updateAudioButton() {
+  el('audioToggle').setAttribute('aria-pressed',audioEnabled());
+  el('audioToggle').textContent = audioEnabled() ? 'Audio attivo' : 'Audio spento';
+}
+el('audioToggle').onclick = () => {
+  toggleAudio();
+  updateAudioButton();
+};
+updateAudioButton();
 ageGate.addEventListener('cancel',event => event.preventDefault());
 el('ageDecline').onclick = () => {
   el('ageChoices').hidden = true;
@@ -488,6 +550,7 @@ el('ageDecline').onclick = () => {
   blocked.focus();
 };
 el('ageAccept').addEventListener('click', () => {
+  enableAudio();
   ageGate.close();
   refresh();
   setInterval(refresh,900);

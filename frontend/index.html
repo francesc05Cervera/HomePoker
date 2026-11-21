@@ -38,7 +38,7 @@
 <section id="game" hidden>
   <div class="game-head">
     <div><p id="stage" class="eyebrow"></p><h1 id="roomName"></h1></div>
-    <div class="invite"><span id="code"></span><button id="copy">Copia invito</button><button id="openRecoveryCode">Il mio codice di recupero</button></div>
+    <div class="invite"><span id="code"></span><button id="copy">Copia invito</button><button id="openRecoveryCode">Il mio codice di recupero</button><button id="audioToggle" type="button" aria-pressed="true">Audio</button></div>
   </div>
   <div class="table-meta"><span id="blinds"></span><span id="nextBlinds" hidden></span></div>
   <section class="arena" aria-label="Tavolo da poker">
@@ -98,6 +98,20 @@
     <div id="rebuyNoticeRequests"></div>
     <p id="rebuyNoticeError" role="alert" hidden></p>
     <div class="dialog-actions"><button id="closeRebuyNotice" type="button">Chiudi</button></div>
+  </div>
+</dialog>
+<dialog id="victory" aria-labelledby="victoryTitle">
+  <div class="victory-content">
+    <span class="victory-suit" aria-hidden="true">♠</span>
+    <p id="outcomeLabel" class="eyebrow"></p>
+    <h2 id="victoryTitle">Hai vinto!</h2>
+    <p id="victoryRoom"></p>
+    <p id="outcomeMessage" hidden></p>
+    <p id="outcomeError" role="alert" hidden></p>
+    <div class="outcome-actions">
+      <button id="outcomeWatch" type="button" hidden>Guarda il tavolo</button>
+      <button id="outcomeHome" type="button" class="primary">Torna alla Home</button>
+    </div>
   </div>
 </dialog>
 <dialog id="ageGate" aria-labelledby="ageTitle" aria-describedby="ageDescription ageAdvice">

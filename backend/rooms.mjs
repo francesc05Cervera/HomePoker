@@ -1,8 +1,9 @@
 import { randomInt, randomBytes, timingSafeEqual } from 'node:crypto';
 import { act, actions, foldLeavingPlayer, inHand, GameError, potSize, restoreDeck, snapshotDeck } from './poker.mjs';
-import { activeHand, afterPlay, disconnected, finishRoster, heartbeatTimeout, nextBlinds, readyCount, setManualPause, startHand, syncNext, tickGame } from './clock.mjs';
+import { activeHand, afterPlay, disconnected, finishRoster, heartbeatTimeout, nextBlinds, readyCount, setManualPause, startHand, syncNext, tickGame, tournamentWinner } from './clock.mjs';
 import { fail } from './http-error.mjs';
 import { runoutOdds } from './runout-odds.mjs';
+import { currentPoint } from './evaluate.mjs';
 
 const maxAge = 24*60*60*1000;
 const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -41,18 +42,19 @@ function auth(authorization, room) {
 function view(room, viewer, now) {
   const clockAt = room.disconnect?.at ?? room.manualPause ?? now;
   const remaining = deadline => deadline === null ? null : Math.max(0, deadline - clockAt);
-  const activePlayers = room.players.filter(player => !player.leaving);
   const championship = room.mode === 'tournament' && room.phase === 'result' && readyCount(room) < 2;
+  const champion = tournamentWinner(room);
   const pending = room.players.filter(player => !player.leaving && player.rebuyRequest !== null);
   return {
     code:room.code, roomName:room.name, me:viewer.id, host:room.host,
     mode:room.mode, phase:room.phase, version:room.version, hand:room.hand,
     actor:room.players[room.actor]?.id, button:room.players[room.button]?.id,
     board:room.board, small:room.small, big:room.big, level:room.level,
-    pot:potSize(room), results:room.results, lastHand:room.lastHand,
+    pot:potSize(room), results:room.results, lastHand:room.lastHand, chipAction:room.chipAction ?? 0,
     actions:actions(room,viewer), recoveryCode:viewer.recoveryCode, runout:room.runout,
     odds:runoutOdds(room),
-    ready:readyCount(room), champion:championship ? activePlayers.find(player => player.stack > 0)?.name ?? null : null,
+    ready:readyCount(room), champion:champion?.name ?? null, championId:champion?.id ?? null,
+    point:viewer.folded ? null : currentPoint(viewer.cards,room.board),
     paused:room.manualPause !== null,
     disconnect:room.disconnect && {
       names:room.disconnect.players.map(id => room.players.find(player => player.id === id)?.name).filter(Boolean),
@@ -132,6 +134,8 @@ function resolveRebuy(room, input, now) {
 function leaveRoom(room, player, now) {
   const actor = room.players[room.actor]?.id;
   const hand = room.hand;
+  const winner = tournamentWinner(room);
+  if (winner) room.winner = winner;
   player.leaving = true;
   if (room.host === player.id) room.host = room.players.find(p => !p.leaving)?.id ?? null;
   if (activeHand(room)) {
@@ -306,7 +310,7 @@ export async function openRooms(store, clock = Date.now) {
         const room = copy(old);
         const player = auth(authorization,room);
         const requestSpecific = route === 'rebuy-decision' && typeof input.requestId === 'string';
-        if (route !== 'rebuy' && !requestSpecific && input.version !== room.version) fail('Il tavolo è cambiato. Riprova.',409);
+        if (route !== 'rebuy' && route !== 'leave' && !requestSpecific && input.version !== room.version) fail('Il tavolo è cambiato. Riprova.',409);
         if (['start','pause','rebuy-decision'].includes(route) && room.host !== player.id) {
           fail('Operazione riservata all’admin del tavolo.',403);
         }

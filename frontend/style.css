@@ -36,6 +36,17 @@ dialog p{margin-block:8px;color:var(--muted)}
 #ageGate p{margin-block:10px}
 #ageChoices{margin-top:16px}
 #ageBlocked{color:var(--lime);font-weight:750}
+#victory[open]{width:min(540px,calc(100% - 28px));padding:clamp(25px,7vw,54px);border-color:#718c55;background:radial-gradient(ellipse at 50% 4%,#2d563a,#14271d 64%,#111c15);box-shadow:0 0 70px #5eaf634d;text-align:center}
+.victory-content{display:grid;justify-items:center;gap:12px}
+.victory-content .eyebrow{color:var(--lime);margin:0}
+.victory-content h2{font-size:clamp(36px,10vw,68px);line-height:1;text-transform:uppercase}
+.victory-suit{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:var(--lime);color:#203727;font:38px Georgia,serif}
+#victoryRoom{margin:0 0 7px;overflow-wrap:anywhere}
+#victory[data-outcome=loss]{border-color:#62746a;background:radial-gradient(ellipse at 50% 4%,#314539,#14251c 64%,#111c15);box-shadow:0 0 40px #0006}
+#victory[data-outcome=loss] .victory-suit{background:#314e3d;color:var(--text)}
+#outcomeMessage,#outcomeError{margin:0}
+#outcomeError{color:var(--danger)}
+.outcome-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
 #rebuyNotice[open]{width:100%;height:100%;max-width:none;max-height:none;margin:0;border:0;border-radius:0;padding:22px;display:grid;place-items:center;overflow:auto;background:#101a14f7}
 .rebuy-notice-content{width:min(100%,530px);border:1px solid #5a765d;border-radius:18px;background:var(--panel);padding:clamp(19px,5vw,38px)}
 .rebuy-notice-content h2{font-size:clamp(28px,6vw,46px);line-height:1.1}
@@ -71,6 +82,7 @@ summary{cursor:pointer}
 .seat.folded{opacity:.65}
 .seat h3{margin:0;font-size:12px;line-height:1.25;overflow-wrap:anywhere}
 .seat p{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.seat.mine .hand-point{color:var(--lime);font-weight:800;line-height:1.15;margin-top:4px}
 .seat-stats{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin:4px 0 0;padding-top:3px;border-top:1px solid var(--line);font-size:10px;line-height:1.25;font-variant-numeric:tabular-nums}
 .seat-stats dt{color:var(--muted)}
 .seat-stats dd{margin:0;font-weight:750}

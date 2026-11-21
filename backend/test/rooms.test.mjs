@@ -41,6 +41,7 @@ test('Cash: all-in scandito, ricarica autorizzata e giocatore attivo dalla mano 
   assert.equal(state.big,10);
   assert.equal(state.turnMs,60000);
   assert.equal(state.nextBlinds,null);
+  assert.equal(state.chipAction,0);
   let busted;
   for (let attempt=0;attempt<9 && !busted;attempt++) {
     const actor = t.actor(state);
@@ -49,10 +50,12 @@ test('Cash: all-in scandito, ricarica autorizzata e giocatore attivo dalla mano 
     assert.equal(own.actions.doublePot,50);
     assert.ok(own.players.find(p=>p.id!==own.me).cards.every(card=>card===null));
     const raised = await t.update(actor,'action',{move:'raise',target:own.actions.max});
+    assert.equal(raised.chipAction,state.chipAction+1);
     assert.equal(raised.odds,null);
     assert.ok(raised.players.find(p=>p.id!==raised.me).cards.every(card=>card===null));
     state = await t.read(t.a);
     state = await t.update(t.actor(state),'action',{move:'call'});
+    assert.equal(state.chipAction,raised.chipAction+1);
     assert.equal(state.runout,true);
     assert.equal(state.board.length,0);
     assert.equal(state.revealMs,2000);
@@ -113,8 +116,10 @@ test('Cash: all-in scandito, ricarica autorizzata e giocatore attivo dalla mano 
   assert.equal(who(state,busted.state.me).rebuys,0);
   const sessions = [t.a,t.b,guest,visitor];
   const currentActor = sessions.find(s=>s.state.me===state.actor);
+  const betsBeforeFold = state.chipAction;
   state = await t.update(currentActor,'action',{move:'fold'});
   assert.equal(state.phase,'result');
+  assert.equal(state.chipAction,betsBeforeFold);
   await t.update(t.a,'pause',{paused:true});
   t.step(2100);
   for (const s of sessions) await t.read(s);
@@ -142,6 +147,7 @@ test('Torneo: timeout fold/check, bui dalla mano successiva e uscita definitiva'
   }
   assert.equal(state.phase,'result');
   assert.equal(who(state,first.state.me).folded,true);
+  assert.equal(state.chipAction,0);
   assert.equal(state.small,3);
   assert.equal(state.big,10);
   assert.equal(state.blindMs,0);
@@ -159,12 +165,14 @@ test('Torneo: timeout fold/check, bui dalla mano successiva e uscita definitiva'
   state = await t.update(t.actor(state),'action',{move:'call'});
   const second = t.actor(state);
   assert.equal((await t.read(second)).actions.call,0);
+  const betsBeforeCheck = state.chipAction;
   for (let i=0;i<12;i++) {
     t.step(5000);
     await t.read(t.a);
     state = await t.read(t.b);
   }
   assert.equal(state.phase,'flop');
+  assert.equal(state.chipAction,betsBeforeCheck);
   assert.equal(who(state,second.state.me).folded,false);
   const last = t.a.state.me === state.actor ? t.b : t.a;
   await assert.rejects(t.update(last,'rebuy',{amount:100}),{status:409});

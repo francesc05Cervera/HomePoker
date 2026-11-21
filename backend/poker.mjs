@@ -163,6 +163,7 @@ export function act(table, player, move, target) {
   const legal = actions(table, player);
   if (!legal) throw new GameError('Aspetta il tuo turno.');
   const seat = table.actor;
+  const stackBefore = player.stack;
   if (move === 'fold') {
     player.folded = true;
   } else if (move === 'call') {
@@ -176,6 +177,7 @@ export function act(table, player, move, target) {
   } else {
     throw new GameError('Azione non valida.');
   }
+  if (player.stack < stackBefore) table.chipAction = (table.chipAction ?? 0) + 1;
   player.actedAt = table.bet;
   advance(table, seat);
 }

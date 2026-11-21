@@ -25,14 +25,28 @@ function five(cards) {
 
 export const handNames = ['Carta alta','Coppia','Doppia coppia','Tris','Scala','Colore','Full','Poker','Scala colore'];
 export function evaluate(cards) {
+  if (cards.length === 5) return five(cards);
   let best = [];
+  const consider = combination => {
+    const score = five(combination);
+    if (compare(score,best) > 0) best = score;
+  };
+  if (cards.length === 6) {
+    for (let i = 0; i < cards.length; i++) consider(cards.filter((_,index) => index !== i));
+    return best;
+  }
   for (let a = 0; a < cards.length; a++) {
     for (let b = a+1; b < cards.length; b++) {
-      const score = five(cards.filter((_,i) => i !== a && i !== b));
-      if (compare(score,best) > 0) best = score;
+      consider(cards.filter((_,i) => i !== a && i !== b));
     }
   }
   return best;
+}
+
+export function currentPoint(holeCards, board) {
+  if (holeCards.length !== 2) return null;
+  if (!board.length) return holeCards[0][0] === holeCards[1][0] ? 'Coppia' : 'Carta alta';
+  return handNames[evaluate([...holeCards,...board])[0]];
 }
 
 

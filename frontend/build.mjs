@@ -14,5 +14,5 @@ const placeholder = '<meta name="api-origin" content="">';
 if (!template.includes(placeholder)) throw new Error('Configurazione API del frontend mancante.');
 await Promise.all([
   writeFile(new URL('index.html', dist), template.replace(placeholder, '<meta name="api-origin" content="' + url.origin + '">')),
-  ...['style.css','app.js'].map(file => copyFile(new URL(file, import.meta.url), new URL(file, dist)))
+  ...['style.css','app.js','audio.js'].map(file => copyFile(new URL(file, import.meta.url), new URL(file, dist)))
 ]);

@@ -8,6 +8,15 @@ export const heartbeatTimeout = 6_000;
 export const activeHand = room => room.phase !== 'lobby' && room.phase !== 'result';
 export const readyCount = room => room.players.filter(seated).length;
 
+export function tournamentWinner(room) {
+  if (room.mode !== 'tournament' || room.phase !== 'result') return null;
+  if (room.winner) return room.winner;
+  const ready = room.players.filter(seated);
+  if (ready.length !== 1) return null;
+  const {id,name} = ready[0];
+  return {id,name};
+}
+
 export function finishRoster(room) {
   const removedBeforeButton = room.players.slice(0, room.button + 1).filter(player => player.leaving).length;
   room.button -= removedBeforeButton;
@@ -20,6 +29,8 @@ export function nextBlinds(room) {
 }
 
 export function syncNext(room, now) {
+  const winner = tournamentWinner(room);
+  if (winner) room.winner = winner;
   const ready = room.phase === 'result' && readyCount(room) >= 2 && room.manualPause === null;
   room.nextAt = ready ? (room.nextAt ?? now + betweenHands) : null;
 }
